@@ -7,19 +7,16 @@
     height (.-height canvas)]
     (.clearRect ctx 0 0 width height)
     (doseq [rect rects]
-      (.fillRect ctx (:x rect) (:y rect) 10 10))))
+      (.fillRect ctx
+        (get-in rect [:position :x])
+        (get-in rect [:position :y])
+        10 10))))
 
 (defn out-of-bounds?
-  ([rect] (not (or
-    (out-of-bounds? rect :x)
-    (out-of-bounds? rect :y))))
+  ([rect] (some (partial out-of-bounds? rect) [:x :y]))
   ([rect axis]
-    (or (> (axis rect) 200)
-        (< (axis rect) 0))))
-
-(defn clamp [{:keys [x y speed] :as rect}]
-  (assoc rect :x (max (min x 200) 0)
-              :y (max (min y 200) 0)))
+    (or (> (get-in rect [:position axis]) 200)
+        (< (get-in rect [:position axis]) 0))))
 
 (defn bounce
   ([rect] (-> rect
@@ -30,22 +27,29 @@
       (update-in rect [:speed axis] #(* % -1))
       rect)))
 
+(defn update-axis [rect axis]
+  (update-in rect [:position axis]
+    #(+ % (get-in rect [:speed axis]))))
+
 (defn move [rect]
   (let [rect (bounce rect)]
-
-    (assoc rect :x (+ (:x rect) (get-in rect [:speed :x]))
-                :y (+ (:y rect) (get-in rect [:speed :y])))))
+    (reduce update-axis rect [:x :y])))
 
 (def move-all (partial map move))
 
 (defn update-world [ctx rects]
   (render ctx rects)
-  (js/setTimeout
-    #(update-world ctx (move-all rects))
-    10))
+  (js/requestAnimationFrame
+    #(update-world ctx (move-all rects))))
 
 (defn get-random-speed []
-  (+ -1 (* (js/Math.random) 2)))
+  (+ -1 (* (js/Math.random) 3)))
+
+(defn get-rect [] ;get REKT
+  { :position {:x 50
+               :y 50 }
+    :speed {:x (get-random-speed)
+            :y (get-random-speed)}})
 
 (defn ^:export run []
   (let [canvas (js/document.getElementById "app")
@@ -54,12 +58,4 @@
     (set! (.-width canvas) (.-innerWidth js/window))
     (set! (.-height canvas) (.-innerHeight js/window))
 
-    (update-world ctx (list
-      { :x 50, :y 50 :speed {
-                      :x (get-random-speed)
-                      :y (get-random-speed)}}
-
-      { :x 50, :y 50 :speed {
-                      :x (get-random-speed)
-                      :y (get-random-speed)
-                      }}))))
+    (update-world ctx (list (get-rect) (get-rect)))))
