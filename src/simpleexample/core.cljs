@@ -7,10 +7,12 @@
     height (.-height canvas)]
     (.clearRect ctx 0 0 width height)
     (doseq [rect rects]
-      (.fillRect ctx
-        (get-in rect [:position :x])
-        (get-in rect [:position :y])
-        10 10))))
+      (let [x (get-in rect [:position :x])
+            y (get-in rect [:position :y])
+            width (get-in rect [:dimensions :width])
+            height (get-in rect [:dimensions :height])]
+
+        (.fillRect ctx x y width height)))))
 
 (defn out-of-bounds?
   ([rect] (some (partial out-of-bounds? rect) [:x :y]))
@@ -24,12 +26,12 @@
               (bounce :y)))
   ([rect axis]
     (if (out-of-bounds? rect axis)
-      (update-in rect [:speed axis] #(* % -1))
+      (update-in rect [:speed axis] * -1)
       rect)))
 
 (defn update-axis [rect axis]
   (update-in rect [:position axis]
-    #(+ % (get-in rect [:speed axis]))))
+    + (get-in rect [:speed axis])))
 
 (defn move [rect]
   (let [rect (bounce rect)]
@@ -46,7 +48,9 @@
   (+ -1 (* (js/Math.random) 3)))
 
 (defn get-rect [] ;get REKT
-  { :position {:x 50
+  { :dimensions {:width 10
+                 :height 10 }
+    :position {:x 50
                :y 50 }
     :speed {:x (get-random-speed)
             :y (get-random-speed)}})
@@ -58,4 +62,4 @@
     (set! (.-width canvas) (.-innerWidth js/window))
     (set! (.-height canvas) (.-innerHeight js/window))
 
-    (update-world ctx (list (get-rect) (get-rect)))))
+    (update-world ctx [(get-rect) (get-rect)])))
