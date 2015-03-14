@@ -1,4 +1,5 @@
-(ns simpleexample.core)
+(ns simpleexample.core
+  (:require [simpleexample.rect :as rect]))
 
 (defn render [ctx rects]
   (let [
@@ -44,17 +45,6 @@
   (js/requestAnimationFrame
     #(update-world ctx (move-all rects))))
 
-(defn get-random-speed []
-  (+ -1 (* (js/Math.random) 3)))
-
-(defn get-rect [] ;get REKT
-  { :dimensions {:width 10
-                 :height 10 }
-    :position {:x 50
-               :y 50 }
-    :speed {:x (get-random-speed)
-            :y (get-random-speed)}})
-
 (defn ^:export run []
   (let [canvas (js/document.getElementById "app")
         ctx (.getContext canvas "2d")]
@@ -62,4 +52,4 @@
     (set! (.-width canvas) (.-innerWidth js/window))
     (set! (.-height canvas) (.-innerHeight js/window))
 
-    (update-world ctx [(get-rect) (get-rect)])))
+    (update-world ctx [(rect/create) (rect/create)])))
