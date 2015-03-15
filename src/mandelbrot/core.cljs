@@ -54,5 +54,5 @@
     (set! (.-width canvas) width)
     (set! (.-height canvas) height)
 
-    (render ctx width height 4 4)
+    (render ctx width height 4 10)
     (println (- (.now js/Date) time-start))))

@@ -243,7 +243,7 @@ canvas.width = width;
 
 canvas.height = height;
 
-mandelbrot.core.render(ctx,width,height,(4),(4));
+mandelbrot.core.render(ctx,width,height,(4),(10));
 
 return cljs.core.println.cljs$core$IFn$_invoke$arity$variadic(cljs.core.array_seq([(Date.now() - time_start)], 0));
 });
