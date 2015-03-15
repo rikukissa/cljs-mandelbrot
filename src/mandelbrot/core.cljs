@@ -2,7 +2,7 @@
 
 (enable-console-print!)
 
-(def max-iterations 24)
+(def max-iterations 100)
 
 (defn calculate-iterations
   ([x y] (calculate-iterations x y 0 0 0))
@@ -15,42 +15,44 @@
                      (+ imaginary (* 2 x y))
                      (inc i)))))
 
-(defn scale [num max s]
+(defn scale [num max scl]
   (-> num
       (- (/ max 2))
-      (* s)
+      (* scl)
       (/ max)))
 
 (defn get-color [iterations]
-  (let [base (max 0 (- iterations 5))]
-    (str "rgba(0, 0, 0, " (/ base 20) ")")))
+  (let [base (/ iterations max-iterations)]
+    (str "rgba(0, 0, 0, " base ")")))
 
 
-(defn render [ctx width height block-size current-scale]
+(defn render [ctx width height size scl]
   (.clearRect ctx 0 0 width height)
 
-  (doseq [x (range (/ width block-size))
-          y (range (/ height block-size))]
+  (doseq [i (range (/ width size))
+          j (range (/ height size))]
 
-    (let [scaled-x (scale (- x -3) (/ width block-size) current-scale)
-          scaled-y (scale y (/ height block-size) current-scale)]
+    (let [x (scale (- i (/ 150 scl)) (/ width size) scl)
+          y (scale j (/ height size) scl)
+          iterations (calculate-iterations x y)]
 
-      (->> (calculate-iterations scaled-x scaled-y)
-           (get-color)
-           (set! (.-fillStyle ctx)))
+      (if (> iterations 0)
+        (do (->> (get-color iterations)
+                 (set! (.-fillStyle ctx)))
+            (.fillRect ctx (* size i) (* size j) size size)))))
 
-      (.fillRect ctx (* block-size x) (* block-size y) block-size block-size))))
+    (js/requestAnimationFrame #(render ctx width height size (* scl 0.99))))
 
 
 (defn ^:export run []
   (let [canvas (js/document.getElementById "app")
         ctx (.getContext canvas "2d")
-        width (.-innerWidth js/window)
-        height (.-innerHeight js/window)
+        width 400
+        height 400
         time-start (.now js/Date)]
 
     (set! (.-width canvas) width)
     (set! (.-height canvas) height)
 
-    (render ctx width height 1 4)
+    (render ctx width height 4 4)
     (println (- (.now js/Date) time-start))))
