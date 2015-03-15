@@ -1,49 +1,51 @@
-(ns simpleexample.core
-  (:require [simpleexample.rect :as rect]))
+(ns simpleexample.core)
 
-(defn render [ctx rects]
+(enable-console-print!)
+
+(def max-iterations 24)
+
+(defn calculate-iterations
+  ([x y] (calculate-iterations x y 0 0 0))
+  ([real imaginary x y i]
+    (if (or (>= i max-iterations)
+            (> (+ (* x x) (* y y)) 4))
+      i
+      (calculate-iterations real
+           imaginary (+ real (- (* x x) (* y y)))
+                     (+ imaginary (* 2 x y))
+                     (inc i)))))
+
+(defn scale [num max]
+  (-> num
+      (- (/ max 2))
+      (* 4)
+      (/ max)))
+
+
+(defn get-color [iterations]
+  (let [base (max 0 (- iterations 5))]
+    (str "rgba(0, 0, 0, " (/ base 20) ")")))
+
+
+(defn render [ctx]
   (let [
     canvas (.-canvas ctx)
     width (.-width canvas)
     height (.-height canvas)]
     (.clearRect ctx 0 0 width height)
-    (doseq [rect rects]
-      (let [x (get-in rect [:position :x])
-            y (get-in rect [:position :y])
-            width (get-in rect [:dimensions :width])
-            height (get-in rect [:dimensions :height])]
 
-        (.fillRect ctx x y width height)))))
+    (doseq [x (range width)
+            y (range height)]
 
-(defn out-of-bounds?
-  ([rect] (some (partial out-of-bounds? rect) [:x :y]))
-  ([rect axis]
-    (or (> (get-in rect [:position axis]) 200)
-        (< (get-in rect [:position axis]) 0))))
+      (let [scaled-x (scale x width)
+            scaled-y (scale y width)]
 
-(defn bounce
-  ([rect] (-> rect
-              (bounce :x)
-              (bounce :y)))
-  ([rect axis]
-    (if (out-of-bounds? rect axis)
-      (update-in rect [:speed axis] * -1)
-      rect)))
+        (->> (calculate-iterations scaled-x scaled-y)
+             (get-color)
+             (set! (.-fillStyle ctx)))
 
-(defn update-axis [rect axis]
-  (update-in rect [:position axis]
-    + (get-in rect [:speed axis])))
+        (.fillRect ctx x y 1 1)))))
 
-(defn move [rect]
-  (let [rect (bounce rect)]
-    (reduce update-axis rect [:x :y])))
-
-(def move-all (partial map move))
-
-(defn update-world [ctx rects]
-  (render ctx rects)
-  (js/requestAnimationFrame
-    #(update-world ctx (move-all rects))))
 
 (defn ^:export run []
   (let [canvas (js/document.getElementById "app")
@@ -52,4 +54,4 @@
     (set! (.-width canvas) (.-innerWidth js/window))
     (set! (.-height canvas) (.-innerHeight js/window))
 
-    (update-world ctx [(rect/create) (rect/create)])))
+    (render ctx)))
